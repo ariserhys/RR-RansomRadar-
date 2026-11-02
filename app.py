@@ -117,8 +117,8 @@ if ev.empty:
     st.info("Waiting for events…")
 else:
     ev["time"] = ev["ts"].map(lambda t: time.strftime("%H:%M:%S", time.localtime(t)))
-    ev["file"] = ev["src_path"].map(lambda p: os.path.basename(p or "?"))
-    ev["dest"] = ev["dest_path"].map(lambda p: os.path.basename(p) if p else "")
+    ev["file"] = ev["src_path"].map(lambda p: os.path.basename(p) if isinstance(p, str) and p else "?")
+    ev["dest"] = ev["dest_path"].map(lambda p: os.path.basename(p) if isinstance(p, str) and p else "")
     st.dataframe(ev[["time", "event_type", "file", "dest"]], height=220)
 
 if auto:

@@ -1,240 +1,282 @@
 <div align="center">
 
-# 🛡️ RansomRadar
+# 🛡️ RansomRadar (v2)
 
-**Explainable ransomware early warning for a sandbox folder.**
+**Cost-Sensitive, Explainable Ransomware Early Warning & Zero-Loss Recovery**
 
-It watches files, catches ransomware-style behaviour in seconds, and every alert
-tells you exactly why it fired, in plain sentences.
+*An intelligent, multi-layer behaviour & content forensics system that catches crypto-ransomware in seconds, provides conformal risk-bounded alerts with exact Shapley attributions, and proves byte-for-byte rollback.*
 
-![Python](https://img.shields.io/badge/python-3.13%2B-3776AB?style=flat-square&logo=python&logoColor=white)
-![OS](https://img.shields.io/badge/OS-Windows%2010%2F11-0078D4?style=flat-square&logo=windows&logoColor=white)
-![UI](https://img.shields.io/badge/dashboard-streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)
-![ML](https://img.shields.io/badge/anomaly-scikit--learn-F7931E?style=flat-square&logo=scikitlearn&logoColor=white)
-![Status](https://img.shields.io/badge/status-academic%20prototype-orange?style=flat-square)
+[![Python](https://img.shields.io/badge/python-3.11%20%7C%203.13-3776AB?style=flat-square&logo=python&logoColor=white)](https://www.python.org/)
+[![OS](https://img.shields.io/badge/OS-Windows%20%7C%20macOS%20%7C%20Linux-0078D4?style=flat-square&logo=windows&logoColor=white)](INSTALL.md)
+[![Tests](https://img.shields.io/badge/tests-73%20passed-success?style=flat-square&logo=pytest&logoColor=white)](tests/)
+[![UI](https://img.shields.io/badge/dashboard-Streamlit-FF4B4B?style=flat-square&logo=streamlit&logoColor=white)](app.py)
+[![ML](https://img.shields.io/badge/ensemble-ECOD%20%2B%20Isolation%20Forest-F7931E?style=flat-square&logo=scikitlearn&logoColor=white)](rr/detect/)
+[![Status](https://img.shields.io/badge/academic-Minor%20Project%20Report-blue?style=flat-square)](docs/minor_project_report.pdf)
 
-*Class project, built to be demoed. Every "attack" comes from our own benign
-simulator. Detection is passive: it writes flags to a local SQLite file and
-touches nothing outside `sandbox/`.*
+---
 
-<!-- TODO: record a 15 s capture of `python demo.py` running, trim it to a GIF
-(ScreenToGif works), save as docs/demo.gif, then uncomment:
-<p align="center"><img src="docs/demo.gif" alt="RansomRadar catching a simulated attack" width="720"></p>
--->
+### 🎓 Academic Information
+**Minor Project Report — 5th Semester, B.E. Computer Science & Engineering**  
+**Department of Computer Science & Engineering, Oriental University, Indore (M.P)**  
+**Supervised by:** Prof. Suraj Batham  
+**Team Members:**  
+• Abhishek Yadav (PU00424EUG00647)  
+• Samarth Mishra (PU00424EUG00716)  
+• Pratik Goyal (PU00424EUG00707)  
+• Yash Chaudhary (PU00424EUG00735)  
+
+---
+
+<p align="center">
+  <img src="docs/screenshots/01_normal_work.png" width="31%" alt="Normal Work Baseline" />
+  <img src="docs/screenshots/02_attack_alerts.png" width="31%" alt="Attack Alerts Dashboard" />
+  <img src="docs/screenshots/03_explain_canary.png" width="31%" alt="Explainable Alert with Evidence" />
+</p>
 
 </div>
 
-## 🎬 What a run looks like
+---
 
-Real output from a real run, verbatim:
+## 📑 Project Deliverables & Documentation
 
-```text
-[collector] 18:34:17 modified canaries\Q4_Payroll_Report.docx (H=7.9/8, TYPE MISMATCH)
-[collector] 18:34:17 modified canaries\FY27_Budget_Allocation.xlsx (H=7.9/8, TYPE MISMATCH)
-[collector] 18:34:22 moved    projects\file_06.csv -> projects\file_06.csv.locked
-[detector]  CANARY ALERT: Q4_Payroll_Report.docx modified
-[detector]  CRITICAL alert (fused): canary_touched,mass_extension_change,mass_deletion
+All project documentation, report submissions, and presentation artifacts are available directly in [`docs/`](docs/):
+
+| Document | Format | Description |
+|---|---|---|
+| **[Minor Project Report](docs/minor_project_report.pdf)** | PDF (29 pages) | Full university report: requirements, DFD/UML, system architecture, forensic mathematics, empirical evaluation, and viva defense findings. |
+| **[Presentation Slides](docs/RansomRadar_Demo_Slides.pdf)** | [PDF](docs/RansomRadar_Demo_Slides.pdf) · [PPTX](docs/RansomRadar_Demo_Slides.pptx) | 18-slide presentation deck used for project evaluation and live demonstration. |
+| **[Command Reference](docs/RansomRadar_Commands_Reference.pdf)** | PDF (3 pages) | Exact verification commands, single/multi-terminal options, attack variations, and test execution. |
+| **[Presentation & Viva Guide](docs/RansomRadar_Presentation_Guide.pdf)** | PDF (20 pages) | 30-second pitch, concept explainers (conformal p-values, ECOD, Shapley), minute-by-minute demo script, and reviewer Q&A guide. |
+| **[Cross-Platform Install Guide](INSTALL.md)** | Markdown | Step-by-step setup instructions for Windows 10/11, macOS (Apple Silicon/Intel), and Linux. |
+| **[v2 Integration Contract](INTEGRATION_CONTRACT.md)** | Markdown | Formal modular architectural boundaries and schema specifications for `rr/`. |
+| **[Quickstart Cheat Sheet](easyguide.txt)** | Text | 2-minute setup guide for both Windows and macOS users. |
+
+---
+
+## 💡 The Core Idea: Behaviour, Not Fingerprints
+
+Traditional antivirus asks: *"Have we seen this executable hash or signature before?"*  
+Ransomware attackers trivially bypass this with polymorphism, packers, or novel compilations.
+
+**RansomRadar asks a fundamentally different question:**  
+> *"What is this process actually doing to the filesystem?"*
+
+Instead of evaluating arbitrary binary code, RansomRadar streams filesystem modification events, samples 4KB file blocks for forensic signals, aggregates multi-scale temporal windows, and applies a **conformal unsupervised anomaly ensemble** coupled with a **byte-for-byte shadow journal recovery system**.
+
+### Differentiators
+
+1. **Reality-Reflecting Metric:** Instead of abstract F1/accuracy on balanced synthetic datasets, we optimize **Files Lost Before Detection** vs **False Alarms Per Hour**.
+2. **Conformal p-values:** Replaces arbitrary detection thresholds with calibrated p-values guaranteed under exchangeability against a held-out normal baseline ($\alpha = 0.01$).
+3. **Dual Content Forensics:** Shannon entropy ($0 \le H \le 8$) combined with **$\chi^2$ byte uniformity testing** and **magic-header verification** to unmask intermittent and partial encryption.
+4. **Built-in Adversary Evader:** We attack our own system using fast bursts, throttled stealth writes, and intermittent encryption (down to 15% file slice encryption) specifically engineered to evade entropy detectors.
+5. **Exact Shapley Attribution:** Mathematical explanation for every alert calculating the exact top-6 feature coalitions driving the anomaly score.
+6. **Zero-Loss Rollback (`verify_rollback.py`):** Pre-attack copy-on-write shadow journal restoring pristine files with automated SHA-256 verification (30/30 files verified byte-for-byte identical).
+
+---
+
+## 🏗️ System Architecture
+
+```mermaid
+flowchart TD
+    subgraph Filesystem ["Filesystem Monitoring"]
+        A["Sandbox Folder"] -->|watchdog stream| B["Collector & Content Forensics"]
+        B -->|4KB sample| C["Shannon Entropy & Chi-Square Uniformity"]
+        B -->|Magic byte check| D["File-Format Header Divergence"]
+    end
+
+    subgraph StreamingCore ["rr.core: Multi-Scale Streaming"]
+        B --> E[("SQLite Event Log")]
+        E --> F["Sliding Windows (10s & 60s scales, 1s hop)"]
+        F --> G["37 Engineered Features\n(rates, ratios, entropy, timing, bursts)"]
+    end
+
+    subgraph DetectionLayer ["rr.detect: Hybrid Ensemble & Calibration"]
+        G --> H["Rule Engine (Tripwire Canaries, Ransom Notes, Bursts)"]
+        G --> I["Unsupervised Ensemble (ECOD + Isolation Forest)"]
+        I --> J["Conformal Calibration Layer (p-value calculation)"]
+        J --> K["Sequential K-of-N Decision Gate"]
+    end
+
+    subgraph Explainability ["Explainability & Response"]
+        H --> L["Fused Alert Synthesizer"]
+        K --> L
+        G --> M["Exact Top-6 Shapley Attribution"]
+        M --> L
+        L --> N["Streamlit Live Dashboard"]
+        L --> O["Cross-Platform Alerts (Windows Toast / macOS osascript / Linux notify-send)"]
+        L --> P["rr.respond: Shadow Journal Rollback & Action Ladder"]
+    end
 ```
 
-And the alert it produced, exactly as the dashboard shows it:
-
-> **CRITICAL** · source `fused`
-> *"Rules: a protected canary file was touched; 18 file extensions changed in one
-> window; 8 deletions in one window. ML: peak content entropy 7.9 exceeds the
-> learned normal envelope (max seen in normal training ~5.2). Evidence:
-> canaries\Q4_Payroll_Report.docx (H=7.9/8) [TYPE MISMATCH] → file_06.csv.locked"*
-
-A desktop toast pops at the same moment. The canary rule fires on the event
-itself, so the first alert lands in under a second.
+---
 
 ## ⚡ Quickstart
 
-Everything needed (Python 3.13, watchdog, scikit-learn, streamlit, pandas,
-joblib) is already installed on the project machine. From this folder:
+### 1. Requirements & Setup
 
-**Option A: one command (recommended for the viva)**
+RansomRadar runs on **Python 3.11+** (tested up to 3.14).
+
+```bash
+# Clone the repository
+git clone https://github.com/ariserhys/RR-RansomRadar-.git
+cd RR-RansomRadar-
+
+# Create and activate a virtual environment
+python -m venv .venv
+
+# Windows
+.venv\Scripts\activate
+# macOS / Linux
+source .venv/bin/activate
+
+# Install dependencies
+pip install -r requirements.txt
+```
+
+### 2. Complete Presentation Demo (One Command)
 
 ```bash
 python demo.py
 ```
+This runs the full end-to-end demonstration:
+- Calibrates on normal human-paced file activity
+- Trains the anomaly detection models
+- Simulates fast, stealth, and header-corruption attacks
+- Displays desktop alerts in real time
+- Launches the Streamlit dashboard at `http://localhost:8501`
 
-That runs five phases: it learns normal behaviour, trains the model, then
-launches a fast attack, a stealth attack and a partial-encryption attack, and
-finally opens the dashboard at `http://localhost:8501`. Toasts pop as alerts
-land. (The toast is a PowerShell balloon; if Windows hides it, check Focus Assist.)
+### 3. Byte-for-Byte Rollback Proof
 
-**Option B: manual, three terminals**
+To demonstrate automated recovery with cryptographic proof:
 
 ```bash
-python simulator.py --reset                        # once, collector paused
-python collector.py                                # terminal 1: watching + live detection
-python simulator.py --mode benign --duration 60    # terminal 2: normal activity
-python model.py train                              # after the benign run (enables ML)
-python simulator.py --mode attack                  # terminal 2: instant CRITICAL
-streamlit run app.py                               # terminal 3: the dashboard
+python verify_rollback.py
+```
+**Verified Review Output:**
+```text
+[1/5] Baseline: 30 files protected in the shadow journal, 30 files hashed (SHA-256)
+[2/5] Simulated attack: canary touch + mass rewrite + ransom note + .locked renames
+[3/5] Damage report: 12 modified, 18 missing, 14 attacker-added
+[4/5] Rollback: restoring pristine bytes from the journal...
+      restored 30 file(s), verified_identical=True
+      quarantined 14 attacker-added file(s)
+[5/5] Proof: 30/30 files byte-for-byte identical to baseline (SHA-256) · all_recovered=True
+RESULT: rollback verified — every original file came back byte-for-byte identical.
 ```
 
-Simulator modes:
+### 4. Run Test Suite
 
-| Mode | What it does | What it proves |
-|---|---|---|
-| `benign` | slow, human-paced edits | the baseline; no alerts |
-| `bulk` | copies 100 files fast, like a backup script | static rules false-alarm on it; ML doesn't |
-| `attack` | canary touch, mass "encryption", ransom note, `.locked` renames, deletions | rules + ML + toast, end to end |
-| `stealth` | quiet full rewrites below every rule threshold | only the learned profile notices |
-| `partial` | corrupts only file headers; entropy stays low | entropy-only tools miss it, we don't |
-
-## 🧠 How detection works
-
-```mermaid
-flowchart LR
-    A[sandbox folder] -->|watchdog events| B[collector + content forensics]
-    B --> C[(SQLite)]
-    C --> D[10 second feature windows]
-    D --> E[learned normal envelope]
-    D --> F[canary + burst + note rules]
-    D --> G[Isolation Forest score]
-    E --> H[fused alert with explanation]
-    F --> H
-    G --> H
-    H --> I[Streamlit dashboard]
-    H --> J[desktop toast / optional webhook]
+```bash
+python -m pytest -q --disable-warnings
 ```
-
-1. `watchdog` streams file events. Windows renames arrive as **moved** pairs,
-   which is how extension changes like `report.docx → report.docx.locked` are caught.
-2. On every throttled write we read 4KB and run content forensics: **Shannon
-   entropy** and a **magic-header check**. Encrypted content sits at ~7.9 of 8;
-   partial encryption keeps entropy low but still breaks the header, which is
-   exactly why both checks exist.
-3. Events are grouped into 10-second windows with ten features: event rate,
-   files touched, new files, edits of existing files, renames, extension
-   changes, deletions, canary-touched, peak entropy, type divergence.
-4. Two detectors run in parallel. The **canary rule** alerts instantly on any
-   touch of a decoy. The **learned normal envelope** flags any feature that
-   exceeds the largest value seen in normal training (the Isolation Forest
-   provides a corroborating anomaly score, see the numbers below for why it
-   doesn't get the final say).
-5. Fused alerts carry both kinds of evidence, then go to the dashboard, a toast
-   and (if you configure it) a webhook.
-
-**Canary files look real on purpose.** They are named `Q4_Payroll_Report.docx`,
-`FY27_Budget_Allocation.xlsx` and `server_admin_passwords.txt`, with plausible
-content, in a `canaries/` folder. A decoy that announces itself is a wasted
-tripwire against a careful attacker. Legitimate software never touches them, so
-any event under that folder is treated as hostile.
-
-## 📊 The numbers
-
-From `python experiment.py --quick` (6 scripted attack sessions, 2 benign/bulk
-sessions, every window scored offline by all four detectors so the comparison
-is apples to apples):
-
-| Detector | Detection rate | Avg delay | False alarms |
-|---|---|---|---|
-| rules only | 2/6 | **0.0 s** (instant canary) | 1/2 (the bulk upload) |
-| ML, entropy only | 4/6 | 6.1 s | 0/2 |
-| ML, full envelope | **6/6** | 6.3 s | **0/2** |
-| combined | **6/6** | 6.9 s | 1/2 |
-
-The interesting row is the ablation. Modern ransomware uses partial encryption
-precisely to defeat entropy-based detectors ([arXiv 2510.15133](https://arxiv.org/html/2510.15133v1)),
-and our replay agrees:
-
-| Attack kind | Caught by entropy only | Caught by full ML |
-|---|---|---|
-| fast | 2/2 | 2/2 |
-| stealth | 2/2 | 2/2 |
-| partial | **0/2** | **2/2** |
-
-Discrimination over all evaluation windows (ROC-style AUC): the envelope's
-worst-breach margin scores **1.000**; the Isolation Forest's own score manages
-**0.400**. Full per-window data lives in `data/experiment_results.csv`, run
-`python experiment.py` (about 4 minutes) to regenerate it with more sessions.
-
-## 💣 Things that went wrong while building
-
-Worth reading before you extend this, because these cost us real debugging time:
-
-- **`"canary" in "canaries"` is `False`.** When we made the decoy names realistic
-  and matched on path substrings, instant canary alerts silently stopped firing.
-  c-a-n-a-r-i-e-s does not contain the letter y. Matching now happens per path
-  part in `features.is_canary_path`.
-- **A legitimate bulk upload is more extreme than an attack.** Our first
-  Isolation Forest trained on calm human activity only, then flagged every
-  backup as anomalous and scored near-random on attacks (AUC 0.400 on one run).
-  The fix: train on bulk uploads too, so "bulk is normal" becomes a second
-  cluster, and let a per-feature max-seen envelope make the call. The forest
-  stays on as a score, not the judge.
-- **Windows/OneDrive double-fires `modified` events** for a single write, and
-  OneDrive occasionally rewrites files on its own. Counts got inflated until we
-  added a 0.1 s duplicate collapse in the collector and a 2 s per-file throttle
-  on content sampling.
-
-## 🚧 What this is deliberately not
-
-- **Not prevention.** It raises flags; it never kills processes or quarantines
-  files. That's an honest scope choice for a passive watcher (Huntress and
-  Elastic pair canaries with automated response, which needs process
-  attribution we don't have).
-- **Not anonymous.** `watchdog` events carry no PID, so RansomRadar can tell
-  you *what* happened but never *who* did it. Sysmon/ETW is the real answer;
-  it's on the roadmap.
-- **Not tuned for real file systems.** The entropy check would false-positive on
-  genuinely compressed files (real `.zip`s, `.jpg`s). Fine in our sandbox of
-  text-based decoys; a real deployment needs an extension allowlist.
-- **Not battle-tested ML.** The envelope is calibrated on roughly a dozen
-  training windows. It works because the demo's normal traffic is well behaved;
-  treat the numbers as what they are.
-
-## 🗂️ The code
-
-| File | Role |
-|---|---|
-| `config.py` | paths, thresholds, canary names, note keywords, DB schema |
-| `db.py` | SQLite layer: events in, alerts out, schema migration |
-| `collector.py` | watchdog → SQLite, content sampling, live detector thread |
-| `forensics.py` | Shannon entropy, magic-header divergence, ransom-note checks |
-| `features.py` | 10 s windows → features, normal profile, plain-language explanations |
-| `model.py` | learned normal envelope + Isolation Forest score |
-| `rules.py` | canary, burst and note rules; rules/ML fusion; live detector |
-| `notify.py` | desktop toast + opt-in webhook |
-| `simulator.py` | benign / bulk / attack / stealth / partial activity |
-| `experiment.py` | four-detector comparison, entropy ablation, AUC |
-| `app.py` | Streamlit dashboard with per-alert evidence panels, CSV export |
-| `demo.py` | the scripted five-phase demo |
-
-Set `WEBHOOK_URL` in `config.py` to mirror alerts to Discord, Slack or n8n.
-It's off by default; only alert titles and explanations leave the machine,
-never file contents.
-
-## 🔭 If we kept going
-
-- USN change journal as the event source (kernel-level, forensics-grade; this
-  is how you'd scale past `watchdog` on Windows)
-- Sysmon/ETW for process attribution, so alerts can name the culprit
-- A MITRE ATT&CK mapping for the rule set (recovery-inhibition, T1490, is the
-  obvious first one)
-- A recorded demo GIF and an actual LICENSE file, which is why there's no
-  license badge up top
-
-## 📚 Prior art we leaned on
-
-- [CryptoDrop](https://www.tripwire.com/state-of-security/early-warning-ransomware-detection-tool-could-help-protect-users-despite-drawbacks)
-  (Scaife et al., ICDCS 2016) — the entropy / file-type divergence / deletion
-  feature set we borrowed for content forensics
-- [PEDA, Kok et al. 2022](https://www.sciencedirect.com/science/article/pii/S1319157820304122) —
-  pre-encryption detection, two layers
-- [Elastic's prebuilt detection rules](https://elastic.github.io/detection-rules-explorer/) —
-  the ransom-note rule mirrors theirs
-- [Huntress Ransomware Canaries](https://support.huntress.io/hc/en-us/articles/4404005167763-Ransomware-Canaries-Technical-Overview) —
-  canary placement and the zero-legitimate-touches doctrine
-- [Intermittent encryption (arXiv 2510.15133)](https://arxiv.org/html/2510.15133v1) —
-  why partial encryption is in the simulator at all
-- [Thinkst Canarytokens / OpenCanary](https://github.com/thinkst/opencanary) —
-  the multi-channel alerting pattern
+*73 tests passed covering unit, integration, conformal calibration, Shapley attribution, and safety boundaries.*
 
 ---
 
-Built as a class project on ransomware early warning. If you're marking this:
-start at `demo.py`, then read `rules.py` and `model.py`, in that order.
+## 🔬 Scientific & Empirical Findings
+
+From structured synthetic evaluation sessions comparing baseline rules against the full ML envelope:
+
+| Detector Configuration | Detection Rate | Average Delay | False Alarms (Bulk Upload) |
+|---|---|---|---|
+| **Static Rules Only** | 2 / 6 | **0.0 s** (instant canary) | 1 / 2 (bulk copy triggers rule) |
+| **Entropy Only** | 4 / 6 | 6.1 s | **0 / 2** |
+| **Full Learned Envelope** | **6 / 6** | 6.3 s | **0 / 2** |
+| **Fused (Rules + Envelope)** | **6 / 6** | 6.9 s | 1 / 2 |
+
+### Intermittent / Partial Encryption Ablation
+
+Modern ransomware (LockFile, BlackCat, Play, Qilin) encrypts only portions of files to defeat entropy detectors. RansomRadar counters this with header-divergence and $\chi^2$ uniformity checks:
+
+| Attack Variation | Caught by Shannon Entropy Alone | Caught by Full RansomRadar |
+|---|---|---|
+| **Fast Bursts (Full)** | 2 / 2 | **2 / 2** |
+| **Stealth Throttled (Full)** | 2 / 2 | **2 / 2** |
+| **Partial / Header-Only** | **0 / 2 (MISSED)** | **2 / 2 (DETECTED)** |
+
+---
+
+## 📁 Repository Structure
+
+```text
+RR-RansomRadar-/
+├── docs/                                 # Academic project deliverables & slides
+│   ├── minor_project_report.pdf         # Complete 29-page project report
+│   ├── RansomRadar_Demo_Slides.pdf      # Presentation slide deck (PDF)
+│   ├── RansomRadar_Demo_Slides.pptx     # Presentation slide deck (PowerPoint)
+│   ├── RansomRadar_Commands_Reference.pdf# Command cheat sheet & verify steps
+│   ├── RansomRadar_Presentation_Guide.pdf# 20-page script, pitch & viva guide
+│   └── screenshots/                     # Real dashboard captures for demonstration
+│       ├── 01_normal_work.png
+│       ├── 02_attack_alerts.png
+│       └── 03_explain_canary.png
+│
+├── rr/                                  # RansomRadar v2 Modular Architecture
+│   ├── core/                            # Streaming ingestion & forensic extraction
+│   │   ├── featurize.py                 # 37-feature extraction over sliding windows
+│   │   ├── forensics.py                 # Shannon entropy & chi-square calculation
+│   │   ├── schema.py                    # NormalisedEvent & Window dataclasses
+│   │   └── windows.py                   # Multi-scale sliding window generator
+│   ├── detect/                          # ML models & explainability
+│   │   ├── baselines.py                 # Envelope, write-threshold & random scorers
+│   │   ├── detector.py                  # ECOD + Isolation Forest + Conformal p-values
+│   │   └── shapley.py                   # Exact top-k Shapley feature attribution
+│   ├── eval/                            # Rigorous evaluation & leak-free splits
+│   │   ├── ablation.py                  # Leave-one-feature-out analysis
+│   │   ├── figures.py                   # Pareto curve & tradeoff generation
+│   │   ├── metrics.py                   # Files lost before detection & time-to-detect
+│   │   └── protocol.py                  # Temporal split & session-group k-fold
+│   ├── notify/                          # Cross-platform alert dispatcher
+│   │   └── push.py                      # Push notification delivery
+│   ├── respond/                         # Active response & automated recovery
+│   │   ├── ladder.py                    # Tiered response policy ladder (T0..T4)
+│   │   └── shadow.py                    # Copy-on-write pre-attack shadow journal
+│   ├── sim/                             # Built-in adversary & synthetic simulator
+│   │   ├── canaries.py                  # Realistic decoy generation & placement
+│   │   ├── evader.py                    # Throttled, partial & canary-avoiding adversary
+│   │   ├── manifest.py                  # Ground truth file hash verification
+│   │   └── safety.py                    # Sandbox containment & directory traversal guards
+│   └── compat.py                        # Seamless bridge between legacy and v2 pipelines
+│
+├── tests/                               # Comprehensive automated test suite (pytest)
+│   ├── test_new_modules.py
+│   ├── test_notify_push.py
+│   ├── test_respond_ladder.py
+│   ├── test_respond_shadow.py
+│   └── test_sim_arena.py
+│
+├── app.py                               # Interactive Streamlit investigation dashboard
+├── collector.py                         # Watchdog filesystem event observer
+├── config.py                            # Central configuration, rules, & paths
+├── db.py                                # SQLite storage layer for events and alerts
+├── demo.py                              # End-to-end scripted viva demonstration
+├── experiment.py                        # Automated benchmark & ablation experiment
+├── features.py                          # Window featurizer & explanation generator
+├── forensics.py                         # Content sampling, entropy & magic headers
+├── model.py                             # Legacy normal envelope & model trainer
+├── notify.py                            # OS native toasts (Windows, macOS, Linux)
+├── rules.py                             # Hybrid live detector & v2 enhancement hook
+├── simulator.py                         # Benign, bulk, fast, stealth & partial adversary
+├── verify_rollback.py                   # Standalone SHA-256 byte-for-byte rollback proof
+├── requirements.txt                     # Pinned project dependencies
+├── INSTALL.md                           # Multi-platform setup manual
+├── INTEGRATION_CONTRACT.md              # Architectural contracts & invariant guarantees
+├── easyguide.txt                        # Quick reference instructions
+└── LICENSE                              # Project license
+```
+
+---
+
+## 🔒 Security & Safe Operating Doctrine
+
+- **Contained Sandbox Operation:** RansomRadar operates strictly within a designated `sandbox/` directory. No external files or system files are ever modified or touched.
+- **Simulated Adversary:** All attacks are generated by internal, controlled Python simulation functions. No real malware or malicious payloads are ever executed or required.
+- **Fail-Safe Response Ladder:** Process termination and quarantine features default to `dry_run=True` and enforce an immutable protected-process allowlist to prevent system instability.
+- **Zero Ingestion Leakage:** All training and calibration strictly enforce temporal ordering and session-level grouping with `assert_no_overlap` guards.
+
+---
+
+## ⚖️ License & Attribution
+
+Developed as an Academic Minor Project at **Oriental University, Indore (M.P)**.  
+Licensed under the [MIT License](LICENSE).

@@ -55,8 +55,11 @@ def reset_sandbox(n_files=30):
 
 
 def _seed_files():
+    # Dot-prefixed paths are control data (shadow journal, arena sentinel),
+    # never attack targets - mirrors config.IGNORED_PREFIXES.
     return [str(p) for p in SANDBOX.rglob("*")
-            if p.is_file() and CANARY_DIR not in p.parts]
+            if p.is_file() and CANARY_DIR not in p.parts
+            and not any(part.startswith(".") for part in p.relative_to(SANDBOX).parts)]
 
 
 # --- benign activity -----------------------------------------------------------

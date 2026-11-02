@@ -50,6 +50,10 @@ def windows_from_events(events, fill_idle=False):
         return pd.DataFrame(columns=cols), {}
 
     df = pd.DataFrame(events)
+    # pandas 3's str dtype stores missing values as NaN (a truthy float);
+    # force paths back to object/None so `if p:` guards behave as intended.
+    for col in ("src_path", "dest_path"):
+        df[col] = df[col].astype(object).where(df[col].notna(), None)
     df["window_start"] = (df["ts"] // WINDOW_SECONDS) * WINDOW_SECONDS
 
     rows, evidence = [], {}
@@ -94,9 +98,9 @@ def windows_from_events(events, fill_idle=False):
             s = f"{e.event_type}: {_short(e.src_path)}"
             if e.dest_path:
                 s += f" -> {_short(e.dest_path)}"
-            if e.entropy is not None:
+            if pd.notna(e.entropy):
                 s += f" (H={e.entropy:.1f}/8)"
-                if e.divergent:
+                if pd.notna(e.divergent) and e.divergent:
                     s += " [TYPE MISMATCH]"
             evidence[ws].append(s)
         evidence[ws] = evidence[ws][:6]

@@ -1,14 +1,19 @@
-"""Alert delivery: Windows balloon toast + optional webhook (opt-in).
+"""Alert delivery: cross-platform desktop toast + optional webhook (opt-in).
 
-Toast: zero dependencies - spawns PowerShell with a NotifyIcon balloon tip
-(built into Windows PowerShell 5.1). Rate-limited and fire-and-forget, so the
-detector thread never blocks on UI.
+Toast:
+  Windows — spawns PowerShell with a NotifyIcon balloon tip (built into
+            Windows PowerShell 5.1). Rate-limited and fire-and-forget.
+  macOS   — uses the built-in `osascript` command to fire a native
+            Notification Center banner. No extra dependencies required.
+  Linux   — uses `notify-send` (libnotify); silently skips if unavailable.
+
 Webhook: POSTs a small JSON summary to config.WEBHOOK_URL (Discord/Slack/n8n
 style). Off by default - no data ever leaves the machine unless the user
 configures a URL, and only alert titles/explanations are sent, never file
 contents.
 """
 import json
+import platform
 import subprocess
 import threading
 import time
@@ -33,20 +38,60 @@ Start-Sleep -Seconds 9
 $n.Dispose()
 """
 
+_OS = platform.system()   # "Windows" | "Darwin" | "Linux"
+
 
 def _ps_quote(s: str) -> str:
+    """Escape a string for safe embedding in a PowerShell single-quoted literal."""
     return "'" + s.replace("'", "''") + "'"
 
 
+def _osa_quote(s: str) -> str:
+    """Escape a string for safe embedding in an AppleScript double-quoted literal."""
+    return '"' + s.replace("\\", "\\\\").replace('"', '\\"') + '"'
+
+
 def _toast(title: str, body: str):
-    script = _POWERSHELL_TOAST.format(title=_ps_quote(title), body=_ps_quote(body))
-    try:
-        subprocess.Popen(
-            ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle",
-             "Hidden", "-Command", script],
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
-    except OSError as exc:
-        print(f"[notify] toast failed: {exc!r}", flush=True)
+    """Fire a native desktop notification; silently absorbs all OS errors."""
+    if _OS == "Darwin":
+        # macOS — Notification Center banner via osascript (built-in, no deps).
+        script = (
+            f"display notification {_osa_quote(body)} "
+            f"with title {_osa_quote(title)}"
+        )
+        try:
+            subprocess.Popen(
+                ["osascript", "-e", script],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError as exc:
+            print(f"[notify] macOS toast failed: {exc!r}", flush=True)
+
+    elif _OS == "Windows":
+        script = _POWERSHELL_TOAST.format(
+            title=_ps_quote(title), body=_ps_quote(body)
+        )
+        try:
+            subprocess.Popen(
+                ["powershell", "-NoProfile", "-NonInteractive", "-WindowStyle",
+                 "Hidden", "-Command", script],
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        except OSError as exc:
+            print(f"[notify] Windows toast failed: {exc!r}", flush=True)
+
+    else:
+        # Linux — notify-send (libnotify). Silently skips if not installed.
+        try:
+            subprocess.Popen(
+                ["notify-send", "--urgency=critical", "--expire-time=8000",
+                 title, body],
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+            )
+        except OSError:
+            pass   # notify-send not available; nothing to do
 
 
 def _webhook(title: str, body: str):

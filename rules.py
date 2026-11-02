@@ -15,7 +15,18 @@ import model
 import notify
 from config import (CANARY_ALERT_COOLDOWN, DETECTOR_POLL_SECONDS, FEATURES,
                     RULE_DELETIONS, RULE_EVENT_RATE_PER_MIN,
-                    RULE_EXTENSION_CHANGES, RULE_RENAMES, WINDOW_SECONDS)
+                    RULE_EXTENSION_CHANGES, RULE_RENAMES, SANDBOX,
+                    WINDOW_SECONDS)
+
+# v2 layer (rr/compat): adds conformal p-values, Shapley attribution and
+# shadow-journal snapshots to alerts. Best-effort and failure-isolated: if it
+# is unavailable, the legacy alert path works exactly as before.
+try:
+    import rr.compat as _v2
+except Exception as _v2_exc:                        # pragma: no cover
+    _v2 = None
+    print(f"[detector] rr.compat unavailable ({_v2_exc!r}); "
+          "alerts run legacy-only", flush=True)
 
 SEVERITY_RANK = {"CRITICAL": 3, "HIGH": 2, "MEDIUM": 1}
 
@@ -110,6 +121,14 @@ class LiveDetector:
                     cooldown = now
                     name = os.path.basename(e["src_path"] or "?")
                     stamp = time.strftime("%H:%M:%S", time.localtime(e["ts"]))
+                    response = ""
+                    if _v2 is not None:
+                        try:
+                            response = _v2.protect_files(
+                                [e["src_path"], e["dest_path"]], SANDBOX)
+                        except Exception as exc:    # legacy alert must survive
+                            print(f"[detector] v2 snapshot skipped: {exc!r}",
+                                  flush=True)
                     db.insert_alert(
                         ts=e["ts"], session_id=e.get("session_id"),
                         source="rule", rule_name="canary_touched",
@@ -119,7 +138,7 @@ class LiveDetector:
                             f"Canary decoy '{name}' was {e['event_type']} at {stamp}. "
                             "Canary files are never used by legitimate software, so "
                             "touching one is a strong ransomware early-warning signal. "
-                            "Investigate immediately."),
+                            "Investigate immediately." + response),
                     )
                     notify.alert("CRITICAL", "RansomRadar canary triggered",
                                  f"Canary decoy '{name}' was {e['event_type']} - "
@@ -146,13 +165,21 @@ class LiveDetector:
                 continue
             alert = evaluate_window(row, evidence.get(ws), self.bundle)
             if alert:
+                suffix, extra = "", {}
+                if _v2 is not None:
+                    try:
+                        suffix, extra = _v2.enhance_window_alert(
+                            alert, row, events, root=SANDBOX)
+                    except Exception as exc:    # legacy alert must survive
+                        print(f"[detector] v2 enhancement skipped: {exc!r}",
+                              flush=True)
                 db.insert_alert(
                     ts=ws + WINDOW_SECONDS, session_id=row.get("session_id"),
                     source=alert["source"], rule_name=alert["rule_name"],
                     severity=alert["severity"], ml_score=alert["ml_score"],
                     window_start=ws, window_end=ws + WINDOW_SECONDS,
-                    explanation=alert["explanation"],
-                    features={f: float(row[f]) for f in FEATURES},
+                    explanation=alert["explanation"] + suffix,
+                    features={**{f: float(row[f]) for f in FEATURES}, **extra},
                 )
                 n_new += 1
                 notify.alert(alert["severity"], f"RansomRadar {alert['source']} alert",

@@ -1,0 +1,74 @@
+RansomRadar — Easy Setup Guide
+================================
+
+
+╔══════════════════════════════╗
+║           macOS              ║
+╚══════════════════════════════╝
+
+1. Install Homebrew (skip if already installed)
+   /bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+2. Install Python
+   brew install python@3.13
+
+3. Go into the project folder
+   cd path/to/RR(RansomRadar)
+
+4. Create a virtual environment
+   python3 -m venv .venv
+   source .venv/bin/activate
+
+5. Install all dependencies
+   pip install -r requirements.txt
+
+6. Run the demo
+   python3 demo.py
+
+   Dashboard opens at → http://localhost:8501
+   Alerts will pop as Notification Center banners (top-right corner).
+   If no banner shows: System Settings → Notifications → Terminal → Allow.
+
+
+----------------------------------------------------------------
+
+
+╔══════════════════════════════╗
+║          Windows             ║
+╚══════════════════════════════╝
+
+1. Install Python (opens the Microsoft Store — one click install)
+   winget install Python.Python.3.13
+
+2. Close and reopen your terminal, then verify
+   python --version
+
+3. Go into the project folder
+   cd path\to\RR(RansomRadar)
+
+4. Create a virtual environment
+   python -m venv .venv
+   .venv\Scripts\activate
+
+5. Install all dependencies
+   pip install -r requirements.txt
+
+6. Run the demo
+   python demo.py
+
+   Dashboard opens at → http://localhost:8501
+   Alerts pop as Windows balloon notifications in the system tray.
+   If no balloon shows: Settings → System → Focus Assist → Off.
+
+
+----------------------------------------------------------------
+
+
+Other useful commands (same on both platforms, venv must be active)
+--------------------------------------------------------------------
+
+  Run tests          →  python -m pytest -q
+  Dashboard only     →  streamlit run app.py
+  Reset sandbox      →  python simulator.py --reset
+  Rollback proof     →  python verify_rollback.py
+  Full experiment    →  python experiment.py
