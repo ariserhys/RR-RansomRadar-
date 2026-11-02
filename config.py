@@ -1,6 +1,6 @@
 """RansomRadar - shared configuration and paths.
 
-Defensive academic prototype: every file RansomRadar touches lives inside the
+Defensive security engine: every file RansomRadar touches lives inside the
 sandbox folder below. Detection is passive (rows in a local SQLite database);
 it never interferes with the system.
 """
